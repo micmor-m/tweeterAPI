@@ -36,6 +36,23 @@ app.get("/register", function (req, res) {
   res.status(200).json({ page: "Register" });
 });
 
+app.post("/register", function (req, res) {
+  const newUser = new User({
+    email: req.body.username,
+    password: req.body.password,
+  });
+  newUser
+    .save()
+    .then((result) => {
+      console.log("Created User");
+      res.status(200).json({ result });
+    })
+    .catch((err) => {
+      console.log("New User not created");
+      res.status(500).json("Internal server error. Try again.");
+    });
+});
+
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));
