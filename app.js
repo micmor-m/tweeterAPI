@@ -4,6 +4,9 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
+const session = require("express-session");
+const passport = require("passport");
+const passportLocalMongoose = require("passport-local-mongoose");
 const cookieSession = require("cookie-session");
 const saltRounds = 10;
 
@@ -12,12 +15,21 @@ const router = express.Router();
 const app = express();
 
 app.use(bodyParser.urlencoded({ extended: true }));
+// app.use(
+//   cookieSession({
+//     name: "session",
+//     keys: ["abcd", "1234"],
+//   })
+// );
 app.use(
-  cookieSession({
-    name: "session",
-    keys: ["abcd", "1234"],
+  session({
+    secret: process.env.SECRET_KEY,
+    resave: false,
+    saveUninitialized: false,
   })
 );
+app.use(passport.initialize());
+app.use(passport.session());
 
 // create mongoose schema
 const userSchema = new mongoose.Schema({
@@ -25,8 +37,16 @@ const userSchema = new mongoose.Schema({
   password: String,
 });
 
+userSchema.plugin(passportLocalMongoose);
+
 // // Create User
 const User = new mongoose.model("User", userSchema);
+
+passport.use(User.createStrategy());
+
+// use static serialize and deserialize of model for passport session support
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
 
 app.get("/login", function (req, res) {
   res.status(200).json({ page: "Login" });
@@ -37,20 +57,22 @@ app.get("/register", function (req, res) {
 });
 
 app.post("/register", function (req, res) {
-  const newUser = new User({
-    email: req.body.username,
-    password: req.body.password,
-  });
-  newUser
-    .save()
-    .then((result) => {
-      console.log("Created User");
-      res.status(200).json({ result });
-    })
-    .catch((err) => {
-      console.log("New User not created");
-      res.status(500).json("Internal server error. Try again.");
-    });
+  User.register(
+    { username: req.body.username },
+    req.body.password,
+    function (err, user) {
+      if (err) {
+        console.log("New User not created", err);
+        res.status(500).json("Internal server error. Try again.");
+      } else {
+        //authenticate user
+        passport.authenticate("local")(req, res, function () {
+          console.log("Created User");
+          res.status(200).json({ user });
+        });
+      }
+    }
+  );
 });
 
 // catch 404 and forward to error handler
