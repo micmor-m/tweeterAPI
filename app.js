@@ -7,10 +7,10 @@ const session = require("express-session");
 const passport = require("passport");
 const passportLocalMongoose = require("passport-local-mongoose");
 const { check, body, validationResult } = require("express-validator");
-
-const router = express.Router();
+//const router = express.Router();
 
 const app = express();
+//const usersRouter = require("./routes/users");
 
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -59,7 +59,8 @@ app.post(
     //Finds the validation errors in this request and wraps them in an object with handy functions
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      //return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json("Inputs not correct");
     }
     User.register(
       { username: req.body.username },
@@ -90,7 +91,8 @@ app.post(
     // Finds the validation errors in this request and wraps them in an object with handy functions
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      //return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json("Inputs not correct");
     }
     const user = new User({
       username: req.body.username,
@@ -109,15 +111,21 @@ app.post(
   }
 );
 
-// catch 404 and forward to error handler
-// app.use(function (req, res, next) {
-//   next(createError(404));
-// });
+app.post("/logout", function (req, res) {
+  req.logout();
+  console.log("User logout");
+  res.status(200).json("Logout");
+});
 
-// // error handler
-// app.use(function (err, req, res, next) {
-//   res.status(err.status || 500).json({ error: "Error" });
-// });
+//catch 404 and forward to error handler
+app.use(function (req, res, next) {
+  next(createError(404));
+});
+
+// error handler
+app.use(function (err, req, res, next) {
+  res.status(err.status || 500).json({ error: "Error" });
+});
 
 // Create DB connection
 const uri = `mongodb+srv://user:${process.env.USER_PW}@cluster0.btpyc.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`;
